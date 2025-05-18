@@ -24,11 +24,18 @@ type RpcPool = {
   counter: number;
 };
 
+type RpcAccount = {
+  sub: string;
+  mode: boolean;
+  counter: number;
+};
+
 export default function Home() {
   const [user, setUser] = useState<UserData | null>(null);
   const [methods, setMethods] = useState<MethodInfo[]>([]);
   const [newPoolUrl, setNewPoolUrl] = useState('');
   const [pools, setPools] = useState<RpcPool[]>([]);
+  const [account, setAccount] = useState<RpcAccount>({ sub: null, mode: false, counter: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -51,6 +58,21 @@ export default function Home() {
   const fetchMethods = async () => {
     if (!user?.token) return;
 
+    // fetch account
+    const resAccount = await fetch('https://api.rpc-shield.com/api/account', {
+      headers: { Authorization: `Bearer ${user.token}` },
+    });
+    if (resAccount.ok) {
+      const data = await resAccount.json();
+      console.log(data);
+      if (data.ok) setAccount(data.account);
+    } else {
+      if (resAccount.status == 401){
+        handleLogout();
+      }
+      console.error('Error al obtener account');
+    }
+
     // fetch pools
     const resPools = await fetch('https://api.rpc-shield.com/api/pool', {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -59,6 +81,9 @@ export default function Home() {
       const data = await resPools.json();
       if (data.ok) setPools(data.pools);
     } else {
+      if (resPools.status == 401){
+        handleLogout();
+      }      
       console.error('Error al obtener pools');
     }
 
@@ -70,6 +95,9 @@ export default function Home() {
       const data = await resMethods.json();
       setMethods(data.methods);
     } else {
+      if (resMethods.status == 401){
+        handleLogout();
+      }
       console.error('Error al obtener métodos');
     }
   };
@@ -93,6 +121,9 @@ export default function Home() {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
     } else {
+      if (res.status == 401){
+        handleLogout();
+      }
       alert('Error al verificar el token');
     }
   };
@@ -115,6 +146,9 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        if (response.status == 401){
+          handleLogout();
+        }
         throw new Error('Error al eliminar el pool');
       }
 
@@ -137,6 +171,9 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        if (response.status == 401){
+          handleLogout();
+        }        
         throw new Error('Error al eliminar el pool');
       }
 
@@ -191,6 +228,43 @@ export default function Home() {
 
       {user && (
         <div className={styles.panel}>
+          <h2 style={{ marginBottom: 10 }}>Tu cuenta</h2>
+          <div style={{ marginBottom: 20 }}>
+            <div>
+              Shield: {account.mode ? "Enabled" : "Disabled"}
+              <button
+                onClick={async () => {
+                  const url = account.mode
+                    ? "https://api.rpc-shield.com/api/account/disable"
+                    : "https://api.rpc-shield.com/api/account/enable";
+
+                  const res = await fetch(url, {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${user.token}` },
+                  });
+
+                  if (res.ok) {
+                    setAccount({ ...account, mode: !account.mode });
+                  } else {
+                    if (res.status == 401){
+                      handleLogout();
+                    }
+                    console.error("Error al cambiar el estado del shield");
+                  }
+                }}
+              >
+                {account.mode ? "Desactivar Shield" : "Activar Shield"}
+              </button>
+            </div>
+            <div>Credits: {account.counter}</div>
+            <div>RPC Proxy URL: https://rpc-shield.com/{account.sub}</div>
+          </div>
+        </div>
+      )}
+
+
+      {user && (
+        <div className={styles.panel}>
           <h2 style={{ marginBottom: 10 }}>Tus pools registrados</h2>
           <div style={{ marginBottom: 20 }}>
             <h3>Agregar nuevo pool</h3>
@@ -223,6 +297,9 @@ export default function Home() {
                     alert('Error: ' + (data.error || 'No se pudo agregar pool'));
                   }
                 } else {
+                  if (res.status == 401){
+                    handleLogout();
+                  }
                   alert('Error al agregar pool');
                 }
               }}
@@ -309,6 +386,9 @@ export default function Home() {
                           if (res.ok) {
                             fetchMethods();                            
                           } else {
+                            if (res.status == 401){
+                              handleLogout();
+                            }                            
                             alert('Error al editar el método');
                           }
                         }}
@@ -335,6 +415,9 @@ export default function Home() {
                               )
                             );
                           } else {
+                            if (res.status == 401){
+                              handleLogout();
+                            }                            
                             alert('Error al cambiar estado del método');
                           }
                         }}
@@ -359,6 +442,9 @@ export default function Home() {
                           if (res.ok) {
                             setMethods((prev) => prev.filter((method) => method.id !== m.id));
                           } else {
+                            if (res.status == 401){
+                              handleLogout();
+                            }                            
                             alert('Error al eliminar el método');
                           }
                         }}
