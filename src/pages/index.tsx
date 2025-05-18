@@ -35,7 +35,7 @@ export default function Home() {
   const [methods, setMethods] = useState<MethodInfo[]>([]);
   const [newPoolUrl, setNewPoolUrl] = useState('');
   const [pools, setPools] = useState<RpcPool[]>([]);
-  const [account, setAccount] = useState<RpcAccount>({ sub: null, mode: false, counter: 0 });
+  const [account, setAccount] = useState<RpcAccount>({ sub: "", mode: false, counter: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,7 +106,13 @@ export default function Home() {
     fetchMethods();
   }, [user]);
 
-  const handleLoginSuccess = async (credentialResponse: any) => {
+  type CredentialResponse = {
+    credential?: string;
+    select_by?: string;
+    clientId?: string;
+  };
+
+  const handleLoginSuccess = async (credentialResponse: CredentialResponse) => {
     const token = credentialResponse.credential;
 
     const res = await fetch('https://api.rpc-shield.com/api/login', {
@@ -135,7 +141,10 @@ export default function Home() {
     setMenuOpen(false);
   };
 
-  const handleDeletePool = async (id) => {
+  const handleDeletePool = async (id: number) => {
+    if (!user) {
+      return;
+    }
     try {
       const response = await fetch(`https://api.rpc-shield.com/api/pool/${id}`, {
         method: 'DELETE',
@@ -160,7 +169,7 @@ export default function Home() {
     }
   };
 
-  const handleDeleteMethod = async (id) => {
+/*  const handleDeleteMethod = async (id) => {
     try {
       const response = await fetch(`https://api.rpc-shield.com/api/pool/${id}`, {
         method: 'DELETE',
@@ -183,7 +192,7 @@ export default function Home() {
       console.error('Error:', error);
       alert('Hubo un problema al eliminar el pool.');
     }
-  };
+  };*/
 
   return (
     <div className={styles.body}>
