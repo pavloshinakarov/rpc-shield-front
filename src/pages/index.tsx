@@ -266,7 +266,7 @@ export default function Home() {
               </button>
             </div>
             <div>Credits: {account.counter}</div>
-            <div>RPC Proxy URL: https://rpc-shield.com/{account.sub}</div>
+            <div>RPC Proxy URL: https://api.rpc-shield.com/{account.sub}</div>
           </div>
         </div>
       )}
